@@ -16,7 +16,6 @@ class FactChecker(gl.Contract):
     @gl.public.write
     def verify_claim(self, claim_text: str) -> str:
         prompt = f"""
-        You are a factual verification consensus node on GenLayer.
         Analyze the following claim or news statement for factual plausibility:
         Claim: "{claim_text}"
 
@@ -25,14 +24,18 @@ class FactChecker(gl.Contract):
         - "reason": a brief 1-sentence explanation of why.
         """
         
-        # Trigger GenLayer consensus engine across LLM nodes
-        res = gl.exec_prompt(prompt)
+        # Correct prompt_non_comparative signature for v0.2.17
+        res = gl.eq_principle.prompt_non_comparative(
+            lambda: prompt,
+            task="Fact check the submitted claim and return verdict in JSON",
+            criteria="The output must be a valid JSON containing 'verdict' and 'reason'."
+        )
         
         self.last_claim = claim_text
-        self.last_verdict = res
+        self.last_verdict = str(res)
         self.total_verifications = self.total_verifications + u256(1)
         
-        return res
+        return str(res)
 
     @gl.public.view
     def get_last_result(self) -> str:
